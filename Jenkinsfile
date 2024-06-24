@@ -104,7 +104,7 @@ pipeline {
                     sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
                     sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
                     sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
-                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench --network host xenjutsu/go-test-bench:0.1'
+                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
                 }
             }
         }
