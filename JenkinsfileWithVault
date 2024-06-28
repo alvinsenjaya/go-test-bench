@@ -14,7 +14,7 @@ pipeline {
                     //sh 'echo sonartoken=$sonartoken'
                     //sh 'echo snyktoken=$snyktoken'
                     //sh 'echo sshkey=$sshkey'
-                    scripts {
+                    script {
                         env.dockertoken=$dockertoken
                         env.testingtoken=$testingtoken
                         env.sonartoken=$sonartoken
