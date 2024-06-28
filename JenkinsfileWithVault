@@ -75,8 +75,7 @@ pipeline {
             }
             steps {
                 withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sonartoken', vaultKey: 'sonar-token']]]]]) {
-                    sh 'echo $sonartoken'
-                        catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                         sh 'sonar-scanner -Dsonar.projectKey=go-test-bench -Dsonar.qualitygate.wait=true -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$sonartoken' 
                     }
                 }
