@@ -103,10 +103,10 @@ pipeline {
                 }
             }
             steps {
-                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key']]]]]) {
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key'], [envVar: 'dockertoken', vaultKey: 'docker_token']]]]]) {
                     sh 'echo """$sshkey""" > ssh-key'
                     sh 'chmod 600 ssh-key'
-                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
+                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 "echo $dockertoken | docker login -u xenjutsu --password-stdin"'
                     sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
                     sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
                     sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
