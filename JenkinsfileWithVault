@@ -1,4 +1,4 @@
-def DOCKERTOKEN = ""
+def dockertoken = ""
 def testingtoken = ""
 def sonartoken = ""
 def snyktoken = ""
@@ -14,19 +14,13 @@ pipeline {
                 }
             }
             steps{
-                withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh-key'], [envVar: 'snyktoken', vaultKey: 'snyk-token'], [envVar: 'testingtoken', vaultKey: 'testing-token'], [envVar: 'dockertoken', vaultKey: 'docker-token'], [envVar: 'sonartoken', vaultKey: 'sonar-token']]]]]) {
+                withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key'], [envVar: 'snyktoken', vaultKey: 'snyk_token'], [envVar: 'testingtoken', vaultKey: 'testing_token'], [envVar: 'dockertoken', vaultKey: 'docker_token'], [envVar: 'sonartoken', vaultKey: 'sonar_token']]]]]) {
                     script {
-                        DOCKERTOKEN = $env.dockertoken
-                        testingtoken = $testingtoken
-                        sonartoken = $sonartoken
-                        snyktoken = $snyktoken
-                        sshkey = $sshkey
-
-                        //sh 'dockertoken = $dockertoken'
-                        //sh 'testingtoken = $testingtoken'
-                        //sh 'sonartoken = $sonartoken'
-                        //sh 'snyktoken = $snyktoken'
-                        //sh 'sshkey = $sshkey'
+                        dockertoken = $docker_token
+                        testingtoken = $testing_token
+                        sonartoken = $sonar_token
+                        snyktoken = $snyk_token
+                        sshkey = $ssh_key
                     }
                 }
             }
