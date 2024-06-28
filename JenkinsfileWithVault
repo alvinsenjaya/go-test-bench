@@ -3,6 +3,11 @@ def testingtoken = ""
 def sonartoken = ""
 def snyktoken = ""
 def sshkey = ""
+def docker_token = ""
+def testing_token = ""
+def sonar_token = ""
+def snyk_token = ""
+def ssh_key = ""
 
 pipeline {
     agent none
