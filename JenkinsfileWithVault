@@ -1,14 +1,11 @@
+def dockertoken
+def testingtoken
+def sonartoken
+def snyktoken
+def sshkey
+
 pipeline {
     agent none
-
-    environment {
-        dockertoken = ''
-        testingtoken = ''
-        sonartoken = ''
-        snyktoken = ''
-        sshkey = ''
-    }
-
     stages {
         stage('Get secret from hashi vault'){
             agent {
