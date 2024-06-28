@@ -1,10 +1,11 @@
+node {
+    withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh-key'], [envVar: 'snyktoken', vaultKey: 'snyk-token'], [envVar: 'testingtoken', vaultKey: 'testing-token'], [envVar: 'dockertoken', vaultKey: 'docker-token'], [envVar: 'sonartoken', vaultKey: 'sonar-token']]]]]) {
+        sh 'echo Getting Secret From Vault'
+    }
+}
+
 pipeline {
     agent none
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('DockerLogin')
-        SNYK_CREDENTIALS = credentials('SnykToken')
-        SONARQUBE_CREDENTIALS = credentials('SonarToken')
-    }
     stages {
         stage('Secret Scanning Using Trufflehog') {
             agent {
@@ -25,7 +26,7 @@ pipeline {
             agent {
               docker {
                   image 'snyk/snyk:node'
-                  args '-u root --network host --env SNYK_TOKEN=$SNYK_CREDENTIALS_PSW --entrypoint='
+                  args '-u root --network host --env SNYK_TOKEN=$snyktoken --entrypoint='
               }
             }
             steps {
@@ -55,7 +56,7 @@ pipeline {
             agent {
               docker {
                   image 'snyk/snyk:node'
-                  args '-u root --network host --env SNYK_TOKEN=$SNYK_CREDENTIALS_PSW --entrypoint='
+                  args '-u root --network host --env SNYK_TOKEN=$snyktoken --entrypoint='
               }
             }
             steps {
@@ -74,12 +75,9 @@ pipeline {
               }
             }
             steps {
-                withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sonartoken', vaultKey: 'sonar-token']]]]]) {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh 'sonar-scanner -Dsonar.projectKey=go-test-bench -Dsonar.qualitygate.wait=true -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$sonartoken' 
-                    }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh 'sonar-scanner -Dsonar.projectKey=go-test-bench -Dsonar.qualitygate.wait=true -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$sonartoken' 
                 }
-                
             }
         }
         stage('Build Docker Image and Push to Docker Registry') {
@@ -90,7 +88,7 @@ pipeline {
                 }
             }
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                sh 'echo $dockertoken | docker login -u xenjutsu --password-stdin'
                 sh 'docker build -t xenjutsu/go-test-bench:0.1 .'
                 sh 'docker push xenjutsu/go-test-bench:0.1'
             }
@@ -103,12 +101,12 @@ pipeline {
                 }
             }
             steps {
-                withCredentials([sshUserPrivateKey(credentialsId: "DeploymentSSHKey", keyFileVariable: 'keyfile')]) {
-                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
-                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
-                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
-                    sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
-                }
+                sh 'echo $sshkey > ssh-key'
+                sh 'chmod 600 ssh-key'
+                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
+                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
+                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
+                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
             }
         }
     }
