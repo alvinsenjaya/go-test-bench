@@ -1,3 +1,9 @@
+def dockertoken
+def testingtoken
+def sonartoken
+def snyktoken
+def sshkey
+
 pipeline {
     agent none
     stages {
