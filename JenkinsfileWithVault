@@ -14,11 +14,13 @@ pipeline {
                     //sh 'echo sonartoken=$sonartoken'
                     //sh 'echo snyktoken=$snyktoken'
                     //sh 'echo sshkey=$sshkey'
-                    env.dockertoken=$dockertoken
-                    env.testingtoken=$testingtoken
-                    env.sonartoken=$sonartoken
-                    env.snyktoken=$snyktoken
-                    env.sshkey=$sshkey
+                    scripts {
+                        env.dockertoken=$dockertoken
+                        env.testingtoken=$testingtoken
+                        env.sonartoken=$sonartoken
+                        env.snyktoken=$snyktoken
+                        env.sshkey=$sshkey
+                    }
                 }
             }
         }
