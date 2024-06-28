@@ -1,22 +1,6 @@
 pipeline {
     agent none
     stages {
-        stage('Get secret from hashi vault'){
-            agent {
-                node {
-                    label 'built-in'
-                }
-            }
-            steps{
-                withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key'], [envVar: 'snyktoken', vaultKey: 'snyk_token'], [envVar: 'testingtoken', vaultKey: 'testing_token'], [envVar: 'dockertoken', vaultKey: 'docker_token'], [envVar: 'sonartoken', vaultKey: 'sonar_token']]]]]) {                
-                    sh 'echo dockertoken=$dockertoken'
-                    sh 'echo testingtoken=$testingtoken'
-                    sh 'echo sonartoken=$sonartoken'
-                    sh 'echo snyktoken=$snyktoken'
-                    sh 'echo sshkey=$sshkey'
-                }
-            }
-        }
         stage('Secret Scanning Using Trufflehog') {
             agent {
                 docker {
@@ -36,15 +20,17 @@ pipeline {
             agent {
               docker {
                   image 'snyk/snyk:node'
-                  args '-u root --network host --env SNYK_TOKEN=$snyktoken --entrypoint='
+                  args '-u root --network host --entrypoint='
               }
             }
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'snyk test --json > snyk-scan-report.json'
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'SNYK_TOKEN', vaultKey: 'snyk_token']]]]]) {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'snyk test --json > snyk-scan-report.json'
+                    }
+                    sh 'cat snyk-scan-report.json'
+                    archiveArtifacts artifacts: 'snyk-scan-report.json'
                 }
-                sh 'cat snyk-scan-report.json'
-                archiveArtifacts artifacts: 'snyk-scan-report.json'
             }
         }
         stage('SCA Trivy Scan Dockerfile Misconfiguration') {
@@ -66,15 +52,17 @@ pipeline {
             agent {
               docker {
                   image 'snyk/snyk:node'
-                  args '-u root --network host --env SNYK_TOKEN=$snyktoken --entrypoint='
+                  args '-u root --network host --entrypoint='
               }
             }
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'snyk code test --json > snyk-sast-report.json'
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'SNYK_TOKEN', vaultKey: 'snyk_token']]]]]) {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'snyk code test --json > snyk-sast-report.json'
+                    }
+                    sh 'cat snyk-scan-report.json'
+                    archiveArtifacts artifacts: 'snyk-sast-report.json'
                 }
-                sh 'cat snyk-scan-report.json'
-                archiveArtifacts artifacts: 'snyk-sast-report.json'
             }
         }
         stage('SAST SonarQube') {
@@ -85,8 +73,10 @@ pipeline {
               }
             }
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'sonar-scanner -Dsonar.projectKey=go-test-bench -Dsonar.qualitygate.wait=true -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$sonartoken' 
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sonartoken', vaultKey: 'sonar_token']]]]]) {
+                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                        sh 'sonar-scanner -Dsonar.projectKey=go-test-bench -Dsonar.qualitygate.wait=true -Dsonar.sources=. -Dsonar.host.url=http://localhost:9000 -Dsonar.token=$sonartoken' 
+                    }
                 }
             }
         }
@@ -98,9 +88,11 @@ pipeline {
                 }
             }
             steps {
-                sh 'echo $dockertoken | docker login -u xenjutsu --password-stdin'
-                sh 'docker build -t xenjutsu/go-test-bench:0.1 .'
-                sh 'docker push xenjutsu/go-test-bench:0.1'
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'dockertoken', vaultKey: 'docker_token']]]]]) {
+                    sh 'echo $dockertoken | docker login -u xenjutsu --password-stdin'
+                    sh 'docker build -t xenjutsu/go-test-bench:0.1 .'
+                    sh 'docker push xenjutsu/go-test-bench:0.1'
+                }
             }
         }
         stage('Deploy Docker Image') {
@@ -111,12 +103,14 @@ pipeline {
                 }
             }
             steps {
-                sh 'echo $sshkey > ssh-key'
-                sh 'chmod 600 ssh-key'
-                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
-                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
-                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
-                sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
+                withVault([configuration: [vaultUrl: 'http://localhost:8200/', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key']]]]]) {
+                    sh 'echo """$sshkey""" > ssh-key'
+                    sh 'chmod 600 ssh-key'
+                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 "echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin"'
+                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker pull xenjutsu/go-test-bench:0.1'
+                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
+                    sh 'ssh -i ssh-key -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
+                }
             }
         }
     }
