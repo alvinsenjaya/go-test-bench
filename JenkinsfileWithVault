@@ -1,14 +1,3 @@
-def dockertoken = ""
-def testingtoken = ""
-def sonartoken = ""
-def snyktoken = ""
-def sshkey = ""
-def docker_token = ""
-def testing_token = ""
-def sonar_token = ""
-def snyk_token = ""
-def ssh_key = ""
-
 pipeline {
     agent none
     stages {
@@ -20,13 +9,6 @@ pipeline {
             }
             steps{
                 withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key'], [envVar: 'snyktoken', vaultKey: 'snyk_token'], [envVar: 'testingtoken', vaultKey: 'testing_token'], [envVar: 'dockertoken', vaultKey: 'docker_token'], [envVar: 'sonartoken', vaultKey: 'sonar_token']]]]]) {
-                    script {
-                        dockertoken = docker_token
-                        testingtoken = testing_token
-                        sonartoken = sonar_token
-                        snyktoken = snyk_token
-                        sshkey = ssh_key
-                    }
                 }
             }
         }
