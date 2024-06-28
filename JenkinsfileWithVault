@@ -9,6 +9,11 @@ pipeline {
             }
             steps{
                 withVault([configuration: [vaultUrl: 'http://localhost:8200', vaultCredentialId: 'jenkins-role', engineVersion: 2], vaultSecrets: [[path: 'secrets/jenkins', engineVersion: 2, secretValues: [[envVar: 'sshkey', vaultKey: 'ssh_key'], [envVar: 'snyktoken', vaultKey: 'snyk_token'], [envVar: 'testingtoken', vaultKey: 'testing_token'], [envVar: 'dockertoken', vaultKey: 'docker_token'], [envVar: 'sonartoken', vaultKey: 'sonar_token']]]]]) {
+                    sh 'echo $dockertoken'
+                    sh 'echo $testingtoken'
+                    sh 'echo $sonartoken'
+                    sh 'echo $snyktoken'
+                    sh 'echo $sshkey'
                 }
             }
         }
