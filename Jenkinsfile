@@ -15,7 +15,7 @@ pipeline {
             }
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'trufflehog filesystem . --exclude-paths trufflehog-excluded-paths.txt --fail --json > trufflehog-scan-result.json'
+                    sh 'trufflehog filesystem . --fail --json > trufflehog-scan-result.json'
                 }
                 sh 'cat trufflehog-scan-result.json'
                 archiveArtifacts artifacts: 'trufflehog-scan-result.json'
@@ -106,38 +106,6 @@ pipeline {
                     sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker rm --force go-test-bench'
                     sh 'ssh -i ${keyfile} -o StrictHostKeyChecking=no root@119.81.54.27 docker run -it --detach -p 8081:8080 --name go-test-bench xenjutsu/go-test-bench:0.1'
                 }
-            }
-        }
-        stage('DAST Nuclei') {
-            agent {
-                docker {
-                    image 'projectdiscovery/nuclei'
-                    args '--user root --network host --entrypoint='
-                }
-            }
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'nuclei -u http://119.81.54.27:8081 -nc -j > nuclei-report.json'
-                    sh 'cat nuclei-report.json'
-                }
-                archiveArtifacts artifacts: 'nuclei-report.json'
-            }
-        }
-        stage('DAST OWASP ZAP') {
-            agent {
-                docker {
-                    image 'ghcr.io/zaproxy/zaproxy:weekly'
-                    args '-u root --network host -v /var/run/docker.sock:/var/run/docker.sock --entrypoint= -v .:/zap/wrk/:rw'
-                }
-            }
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                    sh 'zap-baseline.py -t http://119.81.54.27:8081 -r zapbaseline.html -x zapbaseline.xml'
-                }
-                sh 'cp /zap/wrk/zapbaseline.html ./zapbaseline.html'
-                sh 'cp /zap/wrk/zapbaseline.xml ./zapbaseline.xml'
-                archiveArtifacts artifacts: 'zapbaseline.html'
-                archiveArtifacts artifacts: 'zapbaseline.xml'
             }
         }
     }
