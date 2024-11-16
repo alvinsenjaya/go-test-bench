@@ -4,9 +4,9 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('DockerLogin')
         SNYK_CREDENTIALS = credentials('SnykToken')
         SONARQUBE_CREDENTIALS = credentials('SonarToken')
-        TARGET_IP = '192.168.1.19' // Replace with the actual deployment IP
-        DEPLOY_USERNAME = 'jtf01645'  // Replace with the actual username
-        SONARQUBE_IP = '192.168.1.19' // Replace with the actual SonarQube server IP
+        TARGET_IP = '192.168.0.17' // Replace with the actual deployment IP
+        DEPLOY_USERNAME = 'ubuntu'  // Replace with the actual username
+        SONARQUBE_IP = '192.168.0.18' // Replace with the actual SonarQube server IP
     }
     stages {
         /*
